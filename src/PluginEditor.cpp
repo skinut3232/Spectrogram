@@ -112,11 +112,28 @@ static const char* fragmentShaderSource = R"(
 SpectrogramEditor::SpectrogramEditor(SpectrogramProcessor& p)
     : AudioProcessorEditor(&p), processorRef(p)
 {
-    setSize(900, 480);
+    // Restore display settings from processor state
+    const auto& s = processorRef.settings;
+    colourMapType = static_cast<ColourMap::Type>(std::clamp(s.colourMapId, 1, 5) - 1);
+    logScale      = s.logScale;
+    dbFloor       = s.dbFloor;
+    dbCeiling     = s.dbCeiling;
+
+    setSize(s.editorWidth, s.editorHeight);
     setResizable(true, true);
     setResizeLimits(600, 350, 1920, 1080);
 
     buildControls();
+
+    // Set control states to match restored settings
+    fftSizeBox.setSelectedId(s.fftSizeId, juce::dontSendNotification);
+    overlapBox.setSelectedId(s.overlapId, juce::dontSendNotification);
+    windowBox.setSelectedId(s.windowId, juce::dontSendNotification);
+    colourMapBox.setSelectedId(s.colourMapId, juce::dontSendNotification);
+    scaleButton.setToggleState(logScale, juce::dontSendNotification);
+    scaleButton.setButtonText(logScale ? "Log" : "Linear");
+    dbFloorSlider.setValue(dbFloor, juce::dontSendNotification);
+    dbCeilingSlider.setValue(dbCeiling, juce::dontSendNotification);
 
     glContext.setRenderer(this);
     glContext.setContinuousRepainting(false);
@@ -321,6 +338,7 @@ void SpectrogramEditor::buildControls()
     colourMapBox.onChange = [this]
     {
         colourMapType = static_cast<ColourMap::Type>(colourMapBox.getSelectedId() - 1);
+        processorRef.settings.colourMapId = colourMapBox.getSelectedId();
         repaint();
     };
     addAndMakeVisible(colourMapBox);
@@ -332,6 +350,7 @@ void SpectrogramEditor::buildControls()
     {
         logScale = scaleButton.getToggleState();
         scaleButton.setButtonText(logScale ? "Log" : "Linear");
+        processorRef.settings.logScale = logScale;
         repaint();
     };
     addAndMakeVisible(scaleButton);
@@ -351,6 +370,7 @@ void SpectrogramEditor::buildControls()
     dbFloorSlider.onValueChange = [this]
     {
         dbFloor = static_cast<float>(dbFloorSlider.getValue());
+        processorRef.settings.dbFloor = dbFloor;
         repaint();
     };
     addAndMakeVisible(dbFloorSlider);
@@ -363,6 +383,7 @@ void SpectrogramEditor::buildControls()
     dbCeilingSlider.onValueChange = [this]
     {
         dbCeiling = static_cast<float>(dbCeilingSlider.getValue());
+        processorRef.settings.dbCeiling = dbCeiling;
         repaint();
     };
     addAndMakeVisible(dbCeilingSlider);
@@ -381,6 +402,7 @@ void SpectrogramEditor::onFFTSizeChanged()
         default: order = SpectralAnalyser::FFTOrder::order4096; break;
     }
     analyser.prepare(analyser.getSampleRate(), order);
+    processorRef.settings.fftSizeId = fftSizeBox.getSelectedId();
     textureData.clear();
     textureWidth = 0;
     writePosition = 0;
@@ -389,6 +411,7 @@ void SpectrogramEditor::onFFTSizeChanged()
 void SpectrogramEditor::onOverlapChanged()
 {
     processorRef.getAnalyser().setOverlap(overlapBox.getSelectedId() == 2 ? 0.75f : 0.5f);
+    processorRef.settings.overlapId = overlapBox.getSelectedId();
 }
 
 void SpectrogramEditor::onWindowChanged()
@@ -396,6 +419,7 @@ void SpectrogramEditor::onWindowChanged()
     processorRef.getAnalyser().setWindowType(windowBox.getSelectedId() == 2
         ? SpectralAnalyser::WindowType::blackmanHarris
         : SpectralAnalyser::WindowType::hann);
+    processorRef.settings.windowId = windowBox.getSelectedId();
 }
 
 // ── Timer / frame processing ────────────────────────────────────────────
@@ -617,6 +641,9 @@ void SpectrogramEditor::drawHoverInfo(juce::Graphics& g, juce::Rectangle<int> ar
 
 void SpectrogramEditor::resized()
 {
+    processorRef.settings.editorWidth = getWidth();
+    processorRef.settings.editorHeight = getHeight();
+
     textureData.clear();
     textureWidth = 0;
     writePosition = 0;

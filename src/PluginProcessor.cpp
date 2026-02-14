@@ -113,12 +113,51 @@ juce::AudioProcessorEditor* SpectrogramProcessor::createEditor()
 
 bool SpectrogramProcessor::hasEditor() const { return true; }
 
-void SpectrogramProcessor::getStateInformation(juce::MemoryBlock&)
+void SpectrogramProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
+    auto xml = std::make_unique<juce::XmlElement>("SpectrogramState");
+    xml->setAttribute("fftSizeId",   settings.fftSizeId);
+    xml->setAttribute("overlapId",   settings.overlapId);
+    xml->setAttribute("windowId",    settings.windowId);
+    xml->setAttribute("colourMapId", settings.colourMapId);
+    xml->setAttribute("logScale",    settings.logScale);
+    xml->setAttribute("dbFloor",     static_cast<double>(settings.dbFloor));
+    xml->setAttribute("dbCeiling",   static_cast<double>(settings.dbCeiling));
+    xml->setAttribute("editorWidth", settings.editorWidth);
+    xml->setAttribute("editorHeight", settings.editorHeight);
+    copyXmlToBinary(*xml, destData);
 }
 
-void SpectrogramProcessor::setStateInformation(const void*, int)
+void SpectrogramProcessor::setStateInformation(const void* data, int sizeInBytes)
 {
+    auto xml = getXmlFromBinary(data, sizeInBytes);
+    if (xml == nullptr || !xml->hasTagName("SpectrogramState"))
+        return;
+
+    settings.fftSizeId   = xml->getIntAttribute("fftSizeId",   settings.fftSizeId);
+    settings.overlapId   = xml->getIntAttribute("overlapId",   settings.overlapId);
+    settings.windowId    = xml->getIntAttribute("windowId",    settings.windowId);
+    settings.colourMapId = xml->getIntAttribute("colourMapId", settings.colourMapId);
+    settings.logScale    = xml->getBoolAttribute("logScale",   settings.logScale);
+    settings.dbFloor     = static_cast<float>(xml->getDoubleAttribute("dbFloor",  settings.dbFloor));
+    settings.dbCeiling   = static_cast<float>(xml->getDoubleAttribute("dbCeiling", settings.dbCeiling));
+    settings.editorWidth = xml->getIntAttribute("editorWidth", settings.editorWidth);
+    settings.editorHeight = xml->getIntAttribute("editorHeight", settings.editorHeight);
+
+    // Apply analyser settings immediately
+    SpectralAnalyser::FFTOrder order;
+    switch (settings.fftSizeId)
+    {
+        case 1:  order = SpectralAnalyser::FFTOrder::order1024; break;
+        case 2:  order = SpectralAnalyser::FFTOrder::order2048; break;
+        case 4:  order = SpectralAnalyser::FFTOrder::order8192; break;
+        default: order = SpectralAnalyser::FFTOrder::order4096; break;
+    }
+    analyser.prepare(analyser.getSampleRate(), order);
+    analyser.setOverlap(settings.overlapId == 2 ? 0.75f : 0.5f);
+    analyser.setWindowType(settings.windowId == 2
+        ? SpectralAnalyser::WindowType::blackmanHarris
+        : SpectralAnalyser::WindowType::hann);
 }
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()

@@ -39,6 +39,22 @@ public:
 
     SpectralAnalyser& getAnalyser() noexcept { return analyser; }
 
+    // Persistent display settings (editor reads/writes these)
+    struct Settings
+    {
+        int fftSizeId       = 3;    // ComboBox ID: 1=1024, 2=2048, 3=4096, 4=8192
+        int overlapId       = 1;    // 1=50%, 2=75%
+        int windowId        = 1;    // 1=Hann, 2=Blackman-Harris
+        int colourMapId     = 1;    // 1=Heat, 2=Magma, 3=Inferno, 4=Grayscale, 5=Rainbow
+        bool logScale       = true;
+        float dbFloor       = -90.0f;
+        float dbCeiling     = 0.0f;
+        int editorWidth     = 900;
+        int editorHeight    = 480;
+    };
+
+    Settings settings;
+
 private:
     void timerCallback() override;
 
