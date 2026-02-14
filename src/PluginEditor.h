@@ -1,10 +1,12 @@
 #pragma once
 
+#include <juce_opengl/juce_opengl.h>
 #include "PluginProcessor.h"
 #include "ColourMap.h"
 
 class SpectrogramEditor : public juce::AudioProcessorEditor,
-                           private juce::Timer
+                           private juce::Timer,
+                           private juce::OpenGLRenderer
 {
 public:
     explicit SpectrogramEditor(SpectrogramProcessor&);
@@ -16,20 +18,23 @@ public:
     void mouseMove(const juce::MouseEvent& e) override;
     void mouseExit(const juce::MouseEvent& e) override;
 
+    // OpenGLRenderer
+    void newOpenGLContextCreated() override;
+    void renderOpenGL() override;
+    void openGLContextClosing() override;
+
 private:
     void timerCallback() override;
 
-    void drawSpectrogram(juce::Graphics& g, juce::Rectangle<int> area);
     void drawFrequencyAxis(juce::Graphics& g, juce::Rectangle<int> area);
     void drawTimeAxis(juce::Graphics& g, juce::Rectangle<int> area);
     void drawDbScale(juce::Graphics& g, juce::Rectangle<int> area);
     void drawHoverInfo(juce::Graphics& g, juce::Rectangle<int> area);
 
-    void renderColumnToImage(const float* magnitudesDb, int numBins);
-
-    // Frequency mapping helpers
     float freqToNorm(double freq) const;
     double normToFreq(float norm) const;
+
+    juce::Rectangle<int> getSpectrogramArea() const;
 
     void buildControls();
     void onFFTSizeChanged();
@@ -38,14 +43,22 @@ private:
 
     SpectrogramProcessor& processorRef;
 
-    // Spectrogram image and scroll position
-    juce::Image spectrogramImage;
+    // OpenGL
+    juce::OpenGLContext glContext;
+    std::unique_ptr<juce::OpenGLShaderProgram> shader;
+    GLuint vao = 0, vbo = 0;
+    GLuint textureId = 0;
+    bool glInitialised = false;
+
+    // Spectral texture data: [textureWidth * numBins] floats, circular columns
+    std::vector<float> textureData;
+    int textureWidth = 0;
+    int textureNumBins = 0;
     int writePosition = 0;
+    bool textureNeedsUpload = false;
 
     // Scratch buffer for pulling frames
     std::vector<float> frameBuffer;
-
-    // Last rendered frame for hover readout
     std::vector<float> lastFrame;
 
     // Display settings
