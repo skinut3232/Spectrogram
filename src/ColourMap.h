@@ -7,9 +7,9 @@
 class ColourMap
 {
 public:
-    enum class Type { heat, magma, inferno, grayscale, rainbow };
+    enum class Type { heat, magma, inferno, grayscale, rainbow, viridis, plasma, turbo };
 
-    static constexpr int numTypes = 5;
+    static constexpr int numTypes = 8;
 
     static const char* getName(Type type) noexcept
     {
@@ -20,6 +20,9 @@ public:
             case Type::inferno:   return "Inferno";
             case Type::grayscale: return "Grayscale";
             case Type::rainbow:   return "Rainbow";
+            case Type::viridis:   return "Viridis";
+            case Type::plasma:    return "Plasma";
+            case Type::turbo:     return "Turbo";
         }
         return "Heat";
     }
@@ -34,6 +37,9 @@ public:
             case Type::inferno:   return infernoMap(t);
             case Type::grayscale: return grayscaleMap(t);
             case Type::rainbow:   return rainbowMap(t);
+            case Type::viridis:   return viridisMap(t);
+            case Type::plasma:    return plasmaMap(t);
+            case Type::turbo:     return turboMap(t);
         }
         return heatMap(t);
     }
@@ -89,7 +95,7 @@ private:
                                             b0 + t * (b1 - b0), 1.0f);
     }
 
-    // Magma: black → dark purple → magenta → orange → pale yellow
+    // Magma: black -> dark purple -> magenta -> orange -> pale yellow
     static juce::Colour magmaMap(float t) noexcept
     {
         t = std::clamp(t, 0.0f, 1.0f);
@@ -102,7 +108,7 @@ private:
         return lerp3((t - 0.75f) / 0.25f,     0.99f, 0.57f, 0.25f,  0.99f, 0.99f, 0.75f);
     }
 
-    // Inferno: black → dark purple → red-orange → yellow → pale yellow
+    // Inferno: black -> dark purple -> red-orange -> yellow -> pale yellow
     static juce::Colour infernoMap(float t) noexcept
     {
         t = std::clamp(t, 0.0f, 1.0f);
@@ -115,19 +121,57 @@ private:
         return lerp3((t - 0.75f) / 0.25f,     0.99f, 0.64f, 0.03f,  0.98f, 0.99f, 0.64f);
     }
 
-    // Grayscale: black → white
+    // Grayscale: black -> white
     static juce::Colour grayscaleMap(float t) noexcept
     {
         t = std::clamp(t, 0.0f, 1.0f);
         return juce::Colour::fromFloatRGBA(t, t, t, 1.0f);
     }
 
-    // Classic rainbow: red → orange → yellow → green → cyan → blue → violet
+    // Classic rainbow: red -> orange -> yellow -> green -> cyan -> blue -> violet
     static juce::Colour rainbowMap(float t) noexcept
     {
         t = std::clamp(t, 0.0f, 1.0f);
-        // Use HSV with hue cycling from 270 (violet) at 0 to 0 (red) at 1
-        float hue = (1.0f - t) * 0.75f; // 0.75 = 270/360
+        float hue = (1.0f - t) * 0.75f;
         return juce::Colour::fromHSV(hue, 1.0f, t > 0.01f ? 1.0f : 0.0f, 1.0f);
+    }
+
+    // Viridis: dark purple -> teal -> yellow-green
+    static juce::Colour viridisMap(float t) noexcept
+    {
+        t = std::clamp(t, 0.0f, 1.0f);
+        if (t < 0.25f)
+            return lerp3(t / 0.25f,           0.267f, 0.004f, 0.329f,  0.282f, 0.140f, 0.458f);
+        if (t < 0.5f)
+            return lerp3((t - 0.25f) / 0.25f, 0.282f, 0.140f, 0.458f,  0.127f, 0.566f, 0.551f);
+        if (t < 0.75f)
+            return lerp3((t - 0.5f) / 0.25f,  0.127f, 0.566f, 0.551f,  0.554f, 0.812f, 0.246f);
+        return lerp3((t - 0.75f) / 0.25f,     0.554f, 0.812f, 0.246f,  0.993f, 0.906f, 0.144f);
+    }
+
+    // Plasma: dark blue -> purple -> magenta -> orange -> yellow
+    static juce::Colour plasmaMap(float t) noexcept
+    {
+        t = std::clamp(t, 0.0f, 1.0f);
+        if (t < 0.25f)
+            return lerp3(t / 0.25f,           0.050f, 0.030f, 0.528f,  0.417f, 0.001f, 0.658f);
+        if (t < 0.5f)
+            return lerp3((t - 0.25f) / 0.25f, 0.417f, 0.001f, 0.658f,  0.748f, 0.149f, 0.475f);
+        if (t < 0.75f)
+            return lerp3((t - 0.5f) / 0.25f,  0.748f, 0.149f, 0.475f,  0.963f, 0.467f, 0.165f);
+        return lerp3((t - 0.75f) / 0.25f,     0.963f, 0.467f, 0.165f,  0.940f, 0.975f, 0.131f);
+    }
+
+    // Turbo: dark blue -> cyan -> green -> yellow -> red
+    static juce::Colour turboMap(float t) noexcept
+    {
+        t = std::clamp(t, 0.0f, 1.0f);
+        if (t < 0.25f)
+            return lerp3(t / 0.25f,           0.190f, 0.072f, 0.232f,  0.133f, 0.570f, 0.902f);
+        if (t < 0.5f)
+            return lerp3((t - 0.25f) / 0.25f, 0.133f, 0.570f, 0.902f,  0.341f, 0.890f, 0.298f);
+        if (t < 0.75f)
+            return lerp3((t - 0.5f) / 0.25f,  0.341f, 0.890f, 0.298f,  0.951f, 0.651f, 0.039f);
+        return lerp3((t - 0.75f) / 0.25f,     0.951f, 0.651f, 0.039f,  0.600f, 0.040f, 0.098f);
     }
 };

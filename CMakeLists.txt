@@ -26,6 +26,8 @@ target_sources(SpectrogramPlugin
         src/PluginProcessor.cpp
         src/PluginEditor.cpp
         src/SpectralAnalyser.cpp
+        src/StereoSpectralAnalyser.cpp
+        src/CustomLookAndFeel.cpp
 )
 
 target_compile_definitions(SpectrogramPlugin
