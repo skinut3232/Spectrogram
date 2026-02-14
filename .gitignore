@@ -1,0 +1,43 @@
+# Build directories
+build/
+cmake-build-*/
+out/
+
+# IDE files
+.vs/
+.vscode/
+*.suo
+*.user
+*.sln.docstates
+.idea/
+*.xcworkspace
+*.xcuserdata
+
+# Compiled binaries
+*.exe
+*.dll
+*.so
+*.dylib
+*.vst3
+*.component
+*.app
+
+# Object files
+*.o
+*.obj
+*.pch
+*.pdb
+*.ilk
+*.exp
+*.lib
+
+# JUCE submodule (cloned locally)
+JUCE/
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Project plan (not source code)
+*.docx
