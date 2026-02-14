@@ -1,8 +1,11 @@
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
+#include "AudioFifo.h"
+#include "SpectralAnalyser.h"
 
-class SpectrogramProcessor : public juce::AudioProcessor
+class SpectrogramProcessor : public juce::AudioProcessor,
+                              private juce::Timer
 {
 public:
     SpectrogramProcessor();
@@ -34,6 +37,17 @@ public:
     void getStateInformation(juce::MemoryBlock& destData) override;
     void setStateInformation(const void* data, int sizeInBytes) override;
 
+    SpectralAnalyser& getAnalyser() noexcept { return analyser; }
+
 private:
+    void timerCallback() override;
+
+    static constexpr int fifoCapacity = 48000;
+
+    AudioFifo audioFifo{fifoCapacity};
+    SpectralAnalyser analyser;
+
+    std::vector<float> fifoReadBuffer;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SpectrogramProcessor)
 };

@@ -22,6 +22,7 @@ target_sources(SpectrogramPlugin
     PRIVATE
         src/PluginProcessor.cpp
         src/PluginEditor.cpp
+        src/SpectralAnalyser.cpp
 )
 
 target_compile_definitions(SpectrogramPlugin
